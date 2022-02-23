@@ -35,6 +35,7 @@ router.post('/create-article', (req, res) => {
 /**
  * 接口: 获取文章
  * 查询条件: title, publishTime, tag, publishStatus 
+ * 参数: curPage, pageSize
  */
 router.get('/article-list', (req, res) => {
     const title = req.query.title || '';
@@ -42,20 +43,51 @@ router.get('/article-list', (req, res) => {
     const tag = req.query.tag || '';
     const publishStatus = req.query.publishStatus || '';
 
-    // TODO: 多条件查询, 分页
-    connection.query(`SELECT * FROM article WHERE title like '%${title}%'`, (error, result) => {
+    const curPage = req.query.curPage ? parseInt(req.query.curPage) : 1;
+    const pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 5;
+    const params = [(curPage - 1) * pageSize, pageSize];
+
+    let sql = 'SELECT * FROM article';
+    let count = 0
+
+    if (title || publishTime || tag || publishStatus) {
+        sql += ' WHERE'
+    }
+
+    if (title) {
+        sql += ` title LIKE "%${title}%"`;
+        count++;
+    }
+    if (publishTime) {
+        sql += count > 0 ? ` AND publish_time="${publishTime}"` : ` publish_time="${publishTime}"`;
+        count++;
+    }
+    if (tag) {
+        sql += count > 0 ? ` AND tag="${tag}"` : ` tag="${tag}"`;
+        count++;
+    }
+    if (publishStatus) {
+        sql += count > 0 ? ` AND publish_status="${publishStatus}"` : ` publish_status="${publishStatus}"`;
+        count++;
+    }
+
+    connection.query(sql, (error, data) => {
         if (error) throw error;
-        res.status(200).send({
-            code: 200,
-            data: {
-                result,
-                pagination: {
-                    pageSize: '',
-                    currentPage: '',
-                    totalCount: ''
-                }
-            },
-            message: 'Success'
+        //  limit M offset N: 从第 N 条记录开始, 返回 M 条记录
+        connection.query(`${sql} LIMIT ?, ?`, params, (error, result) => {
+            if (error) throw error;
+            res.status(200).send({
+                code: 200,
+                data: {
+                    result,
+                    pagination: {
+                        pageSize,
+                        curPage,
+                        total: data.length,
+                    }
+                },
+                message: 'Success'
+            })
         })
     })
 })
