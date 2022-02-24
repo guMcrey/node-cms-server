@@ -3,7 +3,7 @@ const router = express.Router();
 const connection = require('../data/config');
 
 router.get('/', function (req, res, next) {
-    res.send('articles');
+    res.send('apis');
 });
 
 
@@ -11,12 +11,11 @@ router.get('/', function (req, res, next) {
  * 接口: 新建文章
  * 字段: title, mainImg, content, url, publishTime, author, tag, description, publishStatus
 */
-router.post('/create-article', (req, res) => {
+router.post('/articles', (req, res) => {
     const { title } = req.body;
 
     if (!title) {
         return res.status(400).send({
-            code: 400,
             message: 'Json Format Error'
         })
     }
@@ -24,9 +23,7 @@ router.post('/create-article', (req, res) => {
     connection.query(`INSERT INTO article SET ?`, req.body, (error, result) => {
         if (error) throw error;
         res.status(200).send({
-            code: 200,
             articleId: result.insertId,
-            message: 'Success'
         })
     })
 });
@@ -37,7 +34,7 @@ router.post('/create-article', (req, res) => {
  * 查询条件: title, publishTime, tag, publishStatus 
  * 参数: curPage, pageSize
  */
-router.get('/article-list', (req, res) => {
+router.get('/articles', (req, res) => {
     const title = req.query.title || '';
     const publishTime = req.query.publishTime || '';
     const tag = req.query.tag || '';
@@ -77,16 +74,12 @@ router.get('/article-list', (req, res) => {
         connection.query(`${sql} LIMIT ?, ?`, params, (error, result) => {
             if (error) throw error;
             res.status(200).send({
-                code: 200,
-                data: {
-                    result,
-                    pagination: {
-                        pageSize,
-                        curPage,
-                        total: data.length,
-                    }
+                result,
+                pagination: {
+                    pageSize,
+                    curPage,
+                    total: data.length,
                 },
-                message: 'Success'
             })
         })
     })
@@ -97,13 +90,12 @@ router.get('/article-list', (req, res) => {
  * 接口功能: 修改文章
  * 修改字段: title, mainImg, content, url, publishTime, author, tag, description, publishStatus
  */
-router.put('/create-article/:article_id', (req, res) => {
+router.put('/articles/:article_id', (req, res) => {
     const articleId = req.params.article_id;
     const { title } = req.body;
 
     if (!title || !articleId) {
-        return res.send({
-            code: 400,
+        return res.status(400).send({
             message: 'Json Format Error'
         })
     }
@@ -111,9 +103,7 @@ router.put('/create-article/:article_id', (req, res) => {
     connection.query(`UPDATE article SET ? WHERE article_id = ?`, [req.body, articleId], (error, result) => {
         if (error) throw error;
         res.status(200).send({
-            code: 200,
             articleId: result.changedRows,
-            message: 'Success'
         })
     })
 })
@@ -127,8 +117,7 @@ router.delete('/articles/:article_id', (req, res) => {
     const articleId = req.params.article_id;
 
     if (!articleId) {
-        return res.send({
-            code: 400,
+        return res.status(400).send({
             message: `Article id is required`
         })
     }
@@ -136,7 +125,6 @@ router.delete('/articles/:article_id', (req, res) => {
     connection.query(`DELETE FROM article WHERE article_id = ${articleId}`, (error, result) => {
         if (error) throw error;
         res.status(200).send({
-            code: 200,
             message: 'Success'
         })
     })
