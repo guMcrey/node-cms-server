@@ -41,7 +41,7 @@ router.get('/articles', (req, res) => {
     const publishStatus = req.query.publishStatus || '';
 
     const curPage = req.query.curPage ? parseInt(req.query.curPage) : 1;
-    const pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 5;
+    const pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 15;
     const params = [(curPage - 1) * pageSize, pageSize];
 
     let sql = 'SELECT * FROM article';
