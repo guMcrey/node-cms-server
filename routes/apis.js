@@ -85,6 +85,20 @@ router.get('/articles', (req, res) => {
     })
 })
 
+/**
+ * 接口功能: 获取某条文章详情
+ * 参数: article_id
+ */
+router.get('/articles/:article_id', (req, res) => {
+    const articleId = req.params.article_id;
+    connection.query(`SELECT * FROM article WHERE article_id = '${articleId}'`, (error, result) => {
+        if (error) throw error;
+        res.status(200).send({
+            result
+        })
+    })
+})
+
 
 /**
  * 接口功能: 修改文章
