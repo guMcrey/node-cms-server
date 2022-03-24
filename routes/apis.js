@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const connection = require('../data/config');
+const { query, connection } = require('../data/config');
 
 router.get('/', function (req, res, next) {
     res.send('apis');
@@ -9,10 +9,10 @@ router.get('/', function (req, res, next) {
 
 /** 
  * 接口: 新建文章
- * 字段: title, mainImg, content, url, publishTime, author, tag, description, publishStatus
+ * 字段: title, main_img, content, url, publish_time, author, tag, description, publish_status
 */
-router.post('/articles', (req, res) => {
-    const { title } = req.body;
+router.post('/articles', async (req, res) => {
+    const { title, url, author, main_img, content, description, publish_time, publish_status, tag } = req.body;
 
     if (!title) {
         return res.status(400).send({
@@ -20,11 +20,35 @@ router.post('/articles', (req, res) => {
         })
     }
 
-    connection.query(`INSERT INTO article SET ?`, req.body, (error, result) => {
-        if (error) throw error;
-        res.status(200).send({
-            articleId: result.insertId,
+    try {
+        // 插入 article 信息
+        const articleRows = await query(`INSERT INTO article SET ?`, { title, url, author, main_img, content, description, publish_time, publish_status })
+
+        // 查询 tag 并过滤
+        let createTag = []
+        for (const i of tag) {
+            const isExistTag = await query(`SELECT * FROM tag WHERE tag_name = '${i}'`)
+            if (!isExistTag.length) {
+                createTag.push(i)
+            }
+        }
+
+        // 插入 tag 信息
+        if (createTag.length) {
+            await query(`INSERT INTO tag (tag_name) VALUES ${createTag.map((_) => `("${_}")`)}`)
+        }
+
+        // 插入 article_tag 关联信息
+        await query(`INSERT INTO article_tag (article_id, tag_name) VALUES ${tag.map((_) => `(${articleRows.insertId}, "${_}")`)}`)
+
+    } catch (e) {
+        res.status(500).send({
+            message: 'Create Error'
         })
+        throw error
+    }
+    res.status(200).send({
+        message: 'Success'
     })
 });
 

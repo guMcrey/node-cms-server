@@ -1,9 +1,9 @@
 # node-cms-server
-Provide api for content management system based on express + mysql
+Provide api for content management system based on **express + mysql**
 
 ## usage
 
-```bash
+```properties
 $ npm install
 $ DEBUG=node-cms-server:* npm start
 ```
@@ -14,13 +14,13 @@ $ DEBUG=node-cms-server:* npm start
 
   It is recommended to use brew to install
 
-```bash
+```properties
 $ brew install mysql
 ```
 
-  create table SQL
+  create *article* SQL: 
 
-```bash
+```cmd
 mysql> CREATE TABLE IF NOT EXISTS `article` (
   `article_id` INT UNSIGNED AUTO_INCREMENT,
   `title` VARCHAR(300) NOT NULL,
@@ -28,11 +28,29 @@ mysql> CREATE TABLE IF NOT EXISTS `article` (
   `main_img` VARCHAR(2000),
   `url` VARCHAR(3000),
   `publish_time` VARCHAR(200),
-  `tag` VARCHAR(500),
   `description` VARCHAR(2000),
   `publish_status` VARCHAR(200),
   PRIMARY KEY(`article_id`)
   )ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
+  
+  create *tag* SQL: Tags for articles
+
+```cmd
+mysql> CREATE TABLE IF NOT EXISTS `article_tag`(  
+  `tag_name` VARCHAR(50) NOT NULL,
+  PRIMARY KEY (`tag_name`)
+  )ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
+
+  create *article_tag* SQL: Tag-to-article association table
+
+```cmd
+mysql> CREATE TABLE IF NOT EXISTS `article_tag`(
+  `article_id` INT UNSIGNED NOT NULL,
+  `tag_name` VARCHAR(50) NOT NULL,
+  PRIMARY KEY (`article_id`, `tag_name`)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
 ```
 
 ## features

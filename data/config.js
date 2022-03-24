@@ -7,6 +7,7 @@
  *      则它将等待连接可用后再继续, 这些池连接不需要手动关闭, 它们可以保持打开状态, 并易于重用.
  */
 const mysql = require('mysql');
+const util = require('util');
 
 const config = {
     host: 'localhost',
@@ -16,7 +17,12 @@ const config = {
 };
 
 const connection = mysql.createPool(config);
+const query = util.promisify(connection.query).bind(connection);
+
 console.log('connected!')
 
-module.exports = connection;
+module.exports = {
+    query,
+    connection,
+}
 
