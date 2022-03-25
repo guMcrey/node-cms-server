@@ -12,7 +12,8 @@ router.get('/', function (req, res, next) {
  * 字段: title, main_img, content, url, publish_time, author, tag, description, publish_status
 */
 router.post('/articles', async (req, res) => {
-    const { title, url, author, main_img, content, description, publish_time, publish_status, tag } = req.body;
+    const { title, url, author, content, description, publish_time, publish_status, tag } = req.body
+    let articleId = undefined;
 
     if (!title) {
         return res.status(400).send({
@@ -22,7 +23,8 @@ router.post('/articles', async (req, res) => {
 
     try {
         // 插入 article 信息
-        const articleRows = await query(`INSERT INTO article SET ?`, { title, url, author, main_img, content, description, publish_time, publish_status })
+        const articleRows = await query(`INSERT INTO article SET ?`, { title, url, author, content, description, publish_time, publish_status })
+        articleId = articleRows.insertId
 
         // 查询 tag 并过滤
         let createTag = []
@@ -36,18 +38,18 @@ router.post('/articles', async (req, res) => {
         // 插入 tag 信息
         if (createTag.length) {
             await query(`INSERT INTO tag (tag_name) VALUES ${createTag.map((_) => `("${_}")`)}`)
+            // 插入 article_tag 关联信息
+            await query(`INSERT INTO article_tag (article_id, tag_name) VALUES ${tag.map((_) => `(${articleId}, "${_}")`)}`)
         }
-
-        // 插入 article_tag 关联信息
-        await query(`INSERT INTO article_tag (article_id, tag_name) VALUES ${tag.map((_) => `(${articleRows.insertId}, "${_}")`)}`)
 
     } catch (e) {
         res.status(500).send({
             message: 'Create Error'
         })
-        throw error
     }
+
     res.status(200).send({
+        articleId,
         message: 'Success'
     })
 });
