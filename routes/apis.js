@@ -60,7 +60,7 @@ router.post('/articles', async (req, res) => {
  * 查询条件: title, publishTime, tag, publishStatus 
  * 参数: curPage, pageSize
  */
-router.get('/articles', (req, res) => {
+router.get('/articles', async (req, res) => {
     const title = req.query.title || '';
     const publishTime = req.query.publishTime || '';
     const tag = req.query.tag || '';
@@ -69,46 +69,71 @@ router.get('/articles', (req, res) => {
     const curPage = req.query.curPage ? parseInt(req.query.curPage) : 1;
     const pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 15;
     const params = [(curPage - 1) * pageSize, pageSize];
-
-    let sql = 'SELECT * FROM article';
     let count = 0
+    const article_tag_list = []
 
-    if (title || publishTime || tag || publishStatus) {
-        sql += ' WHERE'
-    }
-
-    if (title) {
-        sql += ` title LIKE "%${title}%"`;
-        count++;
-    }
-    if (publishTime) {
-        sql += count > 0 ? ` AND publish_time="${publishTime}"` : ` publish_time="${publishTime}"`;
-        count++;
-    }
-    if (tag) {
-        sql += count > 0 ? ` AND tag="${tag}"` : ` tag="${tag}"`;
-        count++;
-    }
-    if (publishStatus) {
-        sql += count > 0 ? ` AND publish_status="${publishStatus}"` : ` publish_status="${publishStatus}"`;
-        count++;
-    }
-
-    connection.query(sql, (error, data) => {
-        if (error) throw error;
-        //  limit M offset N: 从第 N 条记录开始, 返回 M 条记录
-        connection.query(`${sql} LIMIT ?, ?`, params, (error, result) => {
-            if (error) throw error;
-            res.status(200).send({
-                result,
-                pagination: {
-                    pageSize,
-                    curPage,
-                    total: data.length,
-                },
+    try {
+        const articles = await query(`SELECT * FROM article`)
+        for (const i of articles) {
+            const tags = await query(`SELECT * FROM article_tag WHERE article_id = ${i.article_id}`)
+            article_tag_list.push({
+                ...i,
+                tag: tags.map((_) => _.tag_name)
             })
+        }
+    } catch (e) {
+        res.status(500).send({
+            message: 'Get Articles Error'
         })
+    }
+
+    res.status(200).send({
+        result: article_tag_list,
+        pagination: {
+            pageSize,
+            curPage,
+            total: res.length,
+        },
     })
+
+
+    // TODO:
+    // if (title || publishTime || tag || publishStatus) {
+    //     sql += ' WHERE'
+    // }
+
+    // if (title) {
+    //     sql += ` title LIKE "%${title}%"`;
+    //     count++;
+    // }
+    // if (publishTime) {
+    //     sql += count > 0 ? ` AND publish_time="${publishTime}"` : ` publish_time="${publishTime}"`;
+    //     count++;
+    // }
+    // if (tag) {
+    //     sql += count > 0 ? ` AND tag="${tag}"` : ` tag="${tag}"`;
+    //     count++;
+    // }
+    // if (publishStatus) {
+    //     sql += count > 0 ? ` AND publish_status="${publishStatus}"` : ` publish_status="${publishStatus}"`;
+    //     count++;
+    // }
+
+    // connection.query(sql, (error, data) => {
+    //     if (error) throw error;
+    //     //  limit M offset N: 从第 N 条记录开始, 返回 M 条记录
+    //     connection.query(`${sql} LIMIT ?, ?`, params, (error, result) => {
+    //         if (error) throw error;
+    //         res.status(200).send({
+    //             result,
+    //             pagination: {
+    //                 pageSize,
+    //                 curPage,
+    //                 total: data.length,
+    //             },
+    //         })
+    //     })
+    // })
 })
 
 /**
