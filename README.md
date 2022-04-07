@@ -6,6 +6,8 @@ Provide api for content management system based on **express + mysql**
 ```properties
 $ npm install
 $ DEBUG=node-cms-server:* npm start
+
+visit http://localhost:3000
 ```
 
 ## Preconditions

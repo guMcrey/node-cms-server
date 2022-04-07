@@ -170,5 +170,18 @@ router.delete('/articles/:article_id', (req, res) => {
     })
 })
 
+/**
+ * 接口: 获取 tag 列表
+ */
+router.get('/tags', (req, res) => {
+    const sql = 'SELECT * FROM tag';
+    connection.query(sql, (error, result) => {
+        if (error) throw error;
+        res.status(200).send({
+            result
+        })
+    })
+})
+
 
 module.exports = router;
