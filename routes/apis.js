@@ -62,24 +62,49 @@ router.post('/articles', async (req, res) => {
  */
 router.get('/articles', async (req, res) => {
     const title = req.query.title || '';
-    const publishTime = req.query.publishTime || '';
+    const startTime = req.query.publish_time_start || '';
+    const endTime = req.query.publish_time_end || '';
     const tag = req.query.tag || '';
-    const publishStatus = req.query.publishStatus || '';
+    const publishStatus = req.query.publish_status || '';
 
     const curPage = req.query.curPage ? parseInt(req.query.curPage) : 1;
     const pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 15;
     const params = [(curPage - 1) * pageSize, pageSize];
     let count = 0
-    const article_tag_list = []
+    let article_tag_list = []
+    let sql = 'SELECT * FROM article'
 
     try {
-        const articles = await query(`SELECT * FROM article`)
+        if (title || (startTime && endTime) || publishStatus) {
+            sql += ' WHERE'
+        }
+        if (title) {
+            sql += ` title LIKE "%${title}%"`;
+            count++;
+        }
+        if (startTime && endTime) {
+            sql += count > 0 ? ` AND publish_time BETWEEN "${startTime}" AND "${endTime}"` : ` publish_time BETWEEN "${startTime}" AND "${endTime}"`;
+            count++;
+        }
+        if (publishStatus) {
+            sql += count > 0 ? ` AND publish_status="${publishStatus}"` : ` publish_status="${publishStatus}"`;
+            count++;
+        }
+
+        const articles = await query(`${sql} LIMIT ${params[0]}, ${params[1]}`)
         for (const i of articles) {
             const tags = await query(`SELECT * FROM article_tag WHERE article_id = ${i.article_id}`)
             article_tag_list.push({
                 ...i,
                 tag: tags.map((_) => _.tag_name)
             })
+
+            if (tag) {
+                article_tag_list = article_tag_list.filter((val) => {
+                    const temp = val.tag.filter((_) => tag.split(',').includes(_))
+                    return temp.length
+                })
+            }
         }
     } catch (e) {
         res.status(500).send({
@@ -95,45 +120,6 @@ router.get('/articles', async (req, res) => {
             total: res.length,
         },
     })
-
-
-    // TODO:
-    // if (title || publishTime || tag || publishStatus) {
-    //     sql += ' WHERE'
-    // }
-
-    // if (title) {
-    //     sql += ` title LIKE "%${title}%"`;
-    //     count++;
-    // }
-    // if (publishTime) {
-    //     sql += count > 0 ? ` AND publish_time="${publishTime}"` : ` publish_time="${publishTime}"`;
-    //     count++;
-    // }
-    // if (tag) {
-    //     sql += count > 0 ? ` AND tag="${tag}"` : ` tag="${tag}"`;
-    //     count++;
-    // }
-    // if (publishStatus) {
-    //     sql += count > 0 ? ` AND publish_status="${publishStatus}"` : ` publish_status="${publishStatus}"`;
-    //     count++;
-    // }
-
-    // connection.query(sql, (error, data) => {
-    //     if (error) throw error;
-    //     //  limit M offset N: 从第 N 条记录开始, 返回 M 条记录
-    //     connection.query(`${sql} LIMIT ?, ?`, params, (error, result) => {
-    //         if (error) throw error;
-    //         res.status(200).send({
-    //             result,
-    //             pagination: {
-    //                 pageSize,
-    //                 curPage,
-    //                 total: data.length,
-    //             },
-    //         })
-    //     })
-    // })
 })
 
 /**
