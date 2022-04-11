@@ -91,7 +91,7 @@ router.get('/articles', async (req, res) => {
             count++;
         }
 
-        const articles = await query(`${sql} LIMIT ${params[0]}, ${params[1]}`)
+        const articles = await query(`${sql} ORDER BY publish_time DESC LIMIT ${params[0]}, ${params[1]}`)
         for (const i of articles) {
             const tags = await query(`SELECT * FROM article_tag WHERE article_id = ${i.article_id}`)
             article_tag_list.push({
@@ -126,13 +126,33 @@ router.get('/articles', async (req, res) => {
  * 接口功能: 获取某条文章详情
  * 参数: article_id
  */
-router.get('/articles/:article_id', (req, res) => {
-    const articleId = req.params.article_id;
-    connection.query(`SELECT * FROM article WHERE article_id = '${articleId}'`, (error, result) => {
-        if (error) throw error;
-        res.status(200).send({
-            result
+router.get('/articles/:article_id', async (req, res) => {
+    let article_info_with_tag = {}
+    try {
+        const articleId = req.params.article_id;
+        if (!articleId) {
+            throw new Error('Article not found')
+        }
+        const articleSql = `SELECT * FROM article WHERE article_id = ${articleId}`
+        const tagSql = `SELECT * FROM article_tag WHERE article_id = ${articleId}`
+        const articleInfo = await query(articleSql)
+        if (!articleInfo.length) {
+            throw new Error('Article not found')
+        }
+        const tags = await query(tagSql)
+
+        article_info_with_tag = {
+            ...articleInfo[0],
+            tag: tags.map((_) => _.tag_name)
+        }
+    } catch (e) {
+        res.status(500).send({
+            message: 'Get Articles Error'
         })
+    }
+
+    res.status(200).send({
+        result: article_info_with_tag
     })
 })
 
