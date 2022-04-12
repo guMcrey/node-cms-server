@@ -18,15 +18,23 @@ const uploadConfig = multer({ storage: storage })
  * 字段: main_img
  */
 router.put('/article-img/:article_id', uploadConfig.single('main_img'), (req, res) => {
+    if (!req.file) {
+        res.status(200).send({
+            code: 200,
+            message: 'img no change'
+        })
+        return
+    }
     const articleId = req.params.article_id;
     localPath = req.file.destination;
     filename = req.file.filename;
 
     // 插入 main_img 文件路径到 article
-    const sql = `UPDATE article SET main_img = '${localPath}/${filename}' WHERE article_id = ${articleId}`
+    const sql = `UPDATE article SET main_img = '${filename}' WHERE article_id = ${articleId}`
     connection.query(sql, (error, result) => {
         if (error) throw error;
         res.status(200).send({
+            code: 200,
             filename
         })
     })

@@ -161,9 +161,9 @@ router.get('/articles/:article_id', async (req, res) => {
  * 接口功能: 修改文章
  * 修改字段: title, mainImg, content, url, publishTime, author, tag, description, publishStatus
  */
-router.put('/articles/:article_id', (req, res) => {
+router.put('/articles/:article_id', async (req, res) => {
     const articleId = req.params.article_id;
-    const { title } = req.body;
+    const { title, url, author, content, description, publish_time, publish_status, tag } = req.body;
 
     if (!title || !articleId) {
         return res.status(400).send({
@@ -171,11 +171,38 @@ router.put('/articles/:article_id', (req, res) => {
         })
     }
 
-    connection.query(`UPDATE article SET ? WHERE article_id = ?`, [req.body, articleId], (error, result) => {
-        if (error) throw error;
-        res.status(200).send({
-            articleId: result.changedRows,
+    try {
+        // 修改 article 信息
+        const articleRows = await query(
+            `UPDATE article SET title = '${title}', author = '${author}', url = '${url}', publish_time = '${publish_time}', description = '${description}', publish_status = '${publish_status}', content = '${content}' WHERE article_id = '${articleId}'`
+        )
+
+        // 查询 tag 是否已创建
+        let createTag = []
+        for (const i of tag) {
+            const isExistTag = await query(`SELECT * FROM tag WHERE tag_name = '${i}'`)
+            if (!isExistTag.length) {
+                createTag.push(i)
+            }
+        }
+
+        // 更新 tag 信息
+        if (createTag.length) {
+            await query(`INSERT INTO tag (tag_name) VALUES ${createTag.map((_) => `("${_}")`)}`)
+        }
+
+        // 更新 article_tag 关联信息
+        await query(`REPLACE INTO article_tag (article_id, tag_name) VALUES ${tag.map((_) => `(${articleId}, "${_}")`)}`)
+
+    } catch (e) {
+        res.status(500).send({
+            message: 'Update Error'
         })
+    }
+
+    res.status(200).send({
+        articleId,
+        message: 'Success'
     })
 })
 
