@@ -57,10 +57,12 @@ router.post('/articles', async (req, res) => {
 
 /**
  * 接口: 获取文章
- * 查询条件: title, publishTime, tag, publishStatus 
+ * 查询条件: article_id, url, title, publishTime, tag, publishStatus 
  * 参数: curPage, pageSize
  */
 router.get('/articles', async (req, res) => {
+    const article_id = req.query.article_id || '';
+    const url = req.query.url || '';
     const title = req.query.title || '';
     const startTime = req.query.publish_time_start || '';
     const endTime = req.query.publish_time_end || '';
@@ -75,11 +77,19 @@ router.get('/articles', async (req, res) => {
     let sql = 'SELECT * FROM article'
 
     try {
-        if (title || (startTime && endTime) || publishStatus) {
+        if (article_id || url || title || (startTime && endTime) || publishStatus) {
             sql += ' WHERE'
         }
+        if (article_id) {
+            sql += ` article_id = '${article_id}'`;
+            count++;
+        }
+        if (url) {
+            sql += count > 0 ? ` AND url LIKE "%${url}%"` : ` url LIKE "%${url}%"`;
+            count++;
+        }
         if (title) {
-            sql += ` title LIKE "%${title}%"`;
+            sql += count > 0 ? ` AND title LIKE "%${title}%"` : ` title LIKE "%${title}%"`;
             count++;
         }
         if (startTime && endTime) {
@@ -211,21 +221,30 @@ router.put('/articles/:article_id', async (req, res) => {
  * 接口功能: 删除某篇文章
  * 必要字段: articleId
  */
-router.delete('/articles/:article_id', (req, res) => {
-    const articleId = req.params.article_id;
+router.delete('/articles/:article_id', async (req, res) => {
 
-    if (!articleId) {
-        return res.status(400).send({
-            message: `Article id is required`
-        })
-    }
+    try {
+        const articleId = req.params.article_id;
+        if (!articleId) {
+            return res.status(400).send({
+                message: `Article id is required`
+            })
+        }
 
-    connection.query(`DELETE FROM article WHERE article_id = ${articleId}`, (error, result) => {
-        if (error) throw error;
+        // 删除 article_tag 数据
+        await query(`DELETE FROM article_tag WHERE article_id = ${articleId}`)
+
+        // 删除 article 数据
+        await query(`DELETE FROM article WHERE article_id = ${articleId}`)
+
         res.status(200).send({
             message: 'Success'
         })
-    })
+    } catch (e) {
+        res.status(500).send({
+            message: 'Delete Error'
+        })
+    }
 })
 
 /**
