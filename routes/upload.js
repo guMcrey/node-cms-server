@@ -40,4 +40,31 @@ router.put('/article-img/:article_id', uploadConfig.single('main_img'), (req, re
     })
 })
 
+/**
+ * 接口: 上传文章内容图片
+ * 字段: wangeditor-uploaded-image
+ */
+
+router.post('/article-content-img', uploadConfig.single('wangeditor-uploaded-image'), (req, res) => {
+    try {
+        if (!req.file) {
+            return
+        }
+        res.status(200).send({
+            "errno": 0,
+            "data": {
+                "url": `http://${req.headers.host}/images/${req.file.filename}`,
+                "alt": 'content img',
+                "href": `${req.headers.origin}/images/${req.file.filename}`
+            }
+        })
+    } catch (e) {
+        res.status(500).send({
+            "errno": 1,
+            "message": "Upload Filed"
+        })
+    }
+
+})
+
 module.exports = router

@@ -43,6 +43,7 @@ router.post('/articles', async (req, res) => {
         }
 
     } catch (e) {
+        console.log('e', e)
         res.status(500).send({
             message: 'Create Error'
         })
@@ -202,9 +203,17 @@ router.put('/articles/:article_id', async (req, res) => {
         }
 
         // 更新 article_tag 关联信息
-        await query(`REPLACE INTO article_tag (article_id, tag_name) VALUES ${tag.map((_) => `(${articleId}, "${_}")`)}`)
+        if (tag && tag.length) {
+            await query(`REPLACE INTO article_tag (article_id, tag_name) VALUES ${tag.map((_) => `(${articleId}, "${_}")`)}`)
+        }
+
+        // 无 tag 时, 删除 tag 与 article 关联信息
+        if (!tag.length) {
+            await query(`DELETE FROM article_tag WHERE article_id = ${articleId}`)
+        }
 
     } catch (e) {
+        console.log('e', e)
         res.status(500).send({
             message: 'Update Error'
         })

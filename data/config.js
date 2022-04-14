@@ -14,6 +14,7 @@ const config = {
     user: 'root',
     password: 'Password123#@!',
     database: 'new_db_name',
+    charset: 'utf8mb4',
 };
 
 const connection = mysql.createPool(config);

@@ -1,7 +1,7 @@
 # node-cms-server
 Provide api for content management system based on **express + mysql**
 
-## usage
+## 📦 Install
 
 ```properties
 $ npm install
@@ -10,7 +10,7 @@ $ DEBUG=node-cms-server:* npm start
 visit http://localhost:3000
 ```
 
-## Preconditions
+## ⌨️ Preconditions
 
   Need to install a database, mysql is used here.
 
@@ -55,18 +55,21 @@ mysql> CREATE TABLE IF NOT EXISTS `article_tag`(
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 ```
 
-## features
+## ✨ Features
 
    * Create article
    * Delete article
    * Update article
    * Select article list
 
-## Frontend project
+## 🤝 Frontend Project
 
-github: [react-cms-boss](https://github.com/guMcrey/react-cms-boss)
+  Github: [react-cms-boss](https://github.com/guMcrey/react-cms-boss)
 
-
-## Tests
+## 🔨 Tests
 
   Use postman to test api availability.
+
+## 🔗 Problems and Solutions
+
+  * [Make mysql support storing emoji in nodejs](https://stackoverflow.com/questions/31698871/er-truncated-wrong-value-for-field-on-saving-some-strings-to-mysql)
