@@ -142,7 +142,10 @@ router.get('/articles/:article_id', async (req, res) => {
     try {
         const articleId = req.params.article_id;
         if (!articleId) {
-            throw new Error('Article not found')
+            res.status(500).send({
+                message: 'Article not found'
+            })
+            return
         }
         const articleSql = `SELECT * FROM article WHERE article_id = ${articleId}`
         const tagSql = `SELECT * FROM article_tag WHERE article_id = ${articleId}`

@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { query, connection } = require('../data/config');
+const fs = require('fs');
+const { promisify } = require('util');
+const unlinkAsync = promisify(fs.unlink);
 const multer = require('multer');
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -65,6 +68,67 @@ router.post('/article-content-img', uploadConfig.single('wangeditor-uploaded-ima
         })
     }
 
+})
+
+/**
+ * 接口: 删除文章未上传内容图片
+ */
+router.patch('/article-content-img', async (req, res) => {
+    try {
+        const { delete_images } = req.body;
+        if (!delete_images || !delete_images.length) {
+            res.status(200).send({
+                code: 200,
+                message: `Affect ${delete_images && delete_images.length} Rows`
+            })
+            return
+        }
+        for (const img of delete_images) {
+            if (img && img.split('/images/')[1]) {
+                const imgPath = `public/images/${img.split('/images/')[1]}`
+                await unlinkAsync(imgPath)
+            }
+        }
+        res.status(200).send({
+            code: 200,
+            message: `Affect ${delete_images && delete_images.length} Rows`
+        })
+    } catch (e) {
+        console.log('e', e)
+        res.status(500).send({
+            code: 500,
+            message: 'Delete Content Images Error'
+        })
+    }
+})
+
+/**
+ * 接口: 上传文章内容视频
+ * 字段: wangeditor-uploaded-video
+ */
+
+router.post('/article-content-video', uploadConfig.single('wangeditor-uploaded-video'), (req, res) => {
+    try {
+        if (!req.file) {
+            return
+        }
+        res.status(200).send(
+            {
+                "errno": 0,
+                "data": {
+                    "url": `http://${req.headers.host}/images/${req.file.filename}`,
+                }
+
+            })
+    } catch (e) {
+        console.log('e', e)
+        res.status(500).send(
+            {
+                "errno": 1,
+                "message": "Upload Video Filed"
+            }
+        )
+    }
 })
 
 module.exports = router
