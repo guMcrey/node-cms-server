@@ -73,3 +73,4 @@ mysql> CREATE TABLE IF NOT EXISTS `article_tag`(
 ## 🔗 Problems and Solutions
 
   * [Make mysql support storing emoji in nodejs](https://stackoverflow.com/questions/31698871/er-truncated-wrong-value-for-field-on-saving-some-strings-to-mysql)
+  * [Error inserting string with apostrophe (') in MySql](https://stackoverflow.com/questions/9596652/how-to-escape-apostrophe-in-mysql)

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { query, connection } = require('../data/config');
+const { escapeApostrophe } = require('../utils/function')
 
 router.get('/', function (req, res, next) {
     res.send('apis');
@@ -12,7 +13,7 @@ router.get('/', function (req, res, next) {
  * 字段: title, main_img, content, url, publish_time, author, tag, description, publish_status
 */
 router.post('/articles', async (req, res) => {
-    const { title, url, author, content, description, publish_time, publish_status, tag } = req.body
+    let { title, url, author, content, description, publish_time, publish_status, tag } = req.body
     let articleId = undefined;
 
     if (!title) {
@@ -20,6 +21,10 @@ router.post('/articles', async (req, res) => {
             message: 'Json Format Error'
         })
     }
+
+    content = escapeApostrophe(content)
+    description = escapeApostrophe(description)
+    tag = escapeApostrophe(tag)
 
     try {
         // 插入 article 信息
@@ -177,13 +182,18 @@ router.get('/articles/:article_id', async (req, res) => {
  */
 router.put('/articles/:article_id', async (req, res) => {
     const articleId = req.params.article_id;
-    const { title, url, author, content, description, publish_time, publish_status, tag } = req.body;
+    let { title, url, author, content, description, publish_time, publish_status, tag } = req.body;
 
     if (!title || !articleId) {
         return res.status(400).send({
             message: 'Json Format Error'
         })
     }
+    title = escapeApostrophe(title)
+    author = escapeApostrophe(author)
+    content = escapeApostrophe(content)
+    description = escapeApostrophe(description)
+    tag = escapeApostrophe(tag)
 
     try {
         // 修改 article 信息
