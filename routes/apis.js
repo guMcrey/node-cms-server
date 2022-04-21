@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { query, connection } = require('../data/config');
-const { escapeApostrophe } = require('../utils/function')
+const SqlString = require('sqlstring');
 
 router.get('/', function (req, res, next) {
     res.send('apis');
@@ -22,19 +22,17 @@ router.post('/articles', async (req, res) => {
         })
     }
 
-    content = escapeApostrophe(content)
-    description = escapeApostrophe(description)
-    tag = escapeApostrophe(tag)
-
     try {
         // 插入 article 信息
-        const articleRows = await query(`INSERT INTO article SET ?`, { title, url, author, content, description, publish_time, publish_status })
+        const insertSql = SqlString.format(`INSERT INTO article SET ?`, { title, url, author, content, description, publish_time, publish_status })
+        const articleRows = await query(insertSql)
         articleId = articleRows.insertId
 
         // 查询 tag 并过滤
         let createTag = []
         for (const i of tag) {
-            const isExistTag = await query(`SELECT * FROM tag WHERE tag_name = '${i}'`)
+            const selectSql = SqlString.format(`SELECT * FROM tag WHERE tag_name = ?`, i)
+            const isExistTag = await query(selectSql)
             if (!isExistTag.length) {
                 createTag.push(i)
             }
@@ -42,9 +40,11 @@ router.post('/articles', async (req, res) => {
 
         // 插入 tag 信息
         if (createTag.length) {
-            await query(`INSERT INTO tag (tag_name) VALUES ${createTag.map((_) => `("${_}")`)}`)
+            const insertTagSql = `INSERT INTO tag (tag_name) VALUES ${createTag.map((_) => `(${SqlString.escape(`${_}`)})`)}`
+            await query(insertTagSql)
             // 插入 article_tag 关联信息
-            await query(`INSERT INTO article_tag (article_id, tag_name) VALUES ${tag.map((_) => `(${articleId}, "${_}")`)}`)
+            const insertArticleTagSql = `INSERT INTO article_tag (article_id, tag_name) VALUES ${tag.map((_) => `(${articleId}, ${SqlString.escape(`${_}`)})`)}`
+            await query(insertArticleTagSql)
         }
 
     } catch (e) {
@@ -189,22 +189,18 @@ router.put('/articles/:article_id', async (req, res) => {
             message: 'Json Format Error'
         })
     }
-    title = escapeApostrophe(title)
-    author = escapeApostrophe(author)
-    content = escapeApostrophe(content)
-    description = escapeApostrophe(description)
-    tag = escapeApostrophe(tag)
 
     try {
         // 修改 article 信息
-        const articleRows = await query(
-            `UPDATE article SET title = '${title}', author = '${author}', url = '${url}', publish_time = '${publish_time}', description = '${description}', publish_status = '${publish_status}', content = '${content}' WHERE article_id = '${articleId}'`
-        )
+        const updateSql = SqlString.format(`UPDATE article SET ? WHERE article_id = ?`,
+            [{ title, author, url, publish_time, description, publish_status, content }, articleId])
+        await query(updateSql)
 
         // 查询 tag 是否已创建
         let createTag = []
         for (const i of tag) {
-            const isExistTag = await query(`SELECT * FROM tag WHERE tag_name = '${i}'`)
+            const tagSql = SqlString.format(`SELECT * FROM tag WHERE tag_name = ?`, i)
+            const isExistTag = await query(tagSql)
             if (!isExistTag.length) {
                 createTag.push(i)
             }
@@ -212,12 +208,12 @@ router.put('/articles/:article_id', async (req, res) => {
 
         // 更新 tag 信息
         if (createTag.length) {
-            await query(`INSERT INTO tag (tag_name) VALUES ${createTag.map((_) => `("${_}")`)}`)
+            await query(`INSERT INTO tag (tag_name) VALUES ${createTag.map((_) => `(${SqlString.escape(_)})`)}`)
         }
 
         // 更新 article_tag 关联信息
         if (tag && tag.length) {
-            await query(`REPLACE INTO article_tag (article_id, tag_name) VALUES ${tag.map((_) => `(${articleId}, "${_}")`)}`)
+            await query(`REPLACE INTO article_tag (article_id, tag_name) VALUES ${tag.map((_) => `(${articleId}, ${SqlString.escape(_)})`)}`)
         }
 
         // 无 tag 时, 删除 tag 与 article 关联信息
@@ -244,7 +240,6 @@ router.put('/articles/:article_id', async (req, res) => {
  * 必要字段: articleId
  */
 router.delete('/articles/:article_id', async (req, res) => {
-
     try {
         const articleId = req.params.article_id;
         if (!articleId) {
