@@ -139,6 +139,39 @@ router.get('/articles', async (req, res) => {
 })
 
 /**
+ * 接口: 获取文章分页
+ * 查询条件: 
+ * 参数: page_num, page_size
+ */
+router.get('/articles/page', async (req, res) => {
+    const pageNum = req.query.page_num || 1;
+    const pageSize = req.query.page_size || 3;
+    const params = [(parseInt(pageNum) - 1) * parseInt(pageSize), parseInt(pageSize)];
+    var sql = "select * from article limit ?, ?";
+    var sqlToTotal = "select count(*) as total from article";
+    let articleList = [];
+    let total = 0;
+    try {
+        articleList = await query(sql, params);
+        const totalNumber = await query(sqlToTotal);
+        total = totalNumber[0].total;
+    } catch (e) {
+        res.status(500).send({
+            message: 'Get Articles Error'
+        })
+    }
+
+    res.status(200).send({
+        result: articleList,
+        page: {
+            pageSize: parseInt(pageSize),
+            pageNum: parseInt(pageNum),
+            total,
+        }
+    })
+})
+
+/**
  * 接口功能: 获取某条文章详情
  * 参数: article_id
  */
