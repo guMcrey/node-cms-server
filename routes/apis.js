@@ -60,7 +60,6 @@ router.post('/articles', async (req, res) => {
     })
 });
 
-
 /**
  * 接口: 获取文章
  * 查询条件: article_id, url, title, publishTime, tag, publishStatus 
@@ -87,29 +86,29 @@ router.get('/articles', async (req, res) => {
             sql += ' WHERE'
         }
         if (article_id) {
-            sql += ` article_id = '${article_id}'`;
+            sql += ` article_id = ${SqlString.escape(article_id)}`;
             count++;
         }
         if (url) {
-            sql += count > 0 ? ` AND url LIKE "%${url}%"` : ` url LIKE "%${url}%"`;
+            sql += count > 0 ? ` AND url LIKE` + SqlString.escape(`%${url}%`) : ` url LIKE ${SqlString.escape(`%${url}%`)}`;
             count++;
         }
         if (title) {
-            sql += count > 0 ? ` AND title LIKE "%${title}%"` : ` title LIKE "%${title}%"`;
+            sql += count > 0 ? ` AND title LIKE ${SqlString.escape(`%${title}%`)}` : ` title LIKE ${SqlString.escape(`%${title}%`)}`;
             count++;
         }
         if (startTime && endTime) {
-            sql += count > 0 ? ` AND publish_time BETWEEN "${startTime}" AND "${endTime}"` : ` publish_time BETWEEN "${startTime}" AND "${endTime}"`;
+            sql += count > 0 ? ` AND publish_time BETWEEN ${SqlString.escape(startTime)} AND ${SqlString.escape(endTime)}` : ` publish_time BETWEEN ${SqlString.escape(startTime)} AND ${SqlString.escape(endTime)}`;
             count++;
         }
         if (publishStatus) {
-            sql += count > 0 ? ` AND publish_status="${publishStatus}"` : ` publish_status="${publishStatus}"`;
+            sql += count > 0 ? ` AND publish_status=${SqlString.escape(publishStatus)}` : ` publish_status=${SqlString.escape(publishStatus)}`;
             count++;
         }
 
-        const articles = await query(`${sql} ORDER BY publish_time DESC LIMIT ${params[0]}, ${params[1]}`)
+        const articles = await query(`${sql} ORDER BY publish_time DESC limit ?, ?`, params)
         for (const i of articles) {
-            const tags = await query(`SELECT * FROM article_tag WHERE article_id = ${i.article_id}`)
+            const tags = await query(`SELECT * FROM article_tag WHERE article_id = ${SqlString.escape(i.article_id)}`)
             article_tag_list.push({
                 ...i,
                 tag: tags.map((_) => _.tag_name)
@@ -147,12 +146,12 @@ router.get('/articles/page', async (req, res) => {
     const pageNum = req.query.page_num || 1;
     const pageSize = req.query.page_size || 3;
     const params = [(parseInt(pageNum) - 1) * parseInt(pageSize), parseInt(pageSize)];
-    var sql = "select * from article limit ?, ?";
-    var sqlToTotal = "select count(*) as total from article";
+    var sql = SqlString.format('select * from article limit ?, ?', params);
+    var sqlToTotal = SqlString.format('select count(*) as total from article');
     let articleList = [];
     let total = 0;
     try {
-        articleList = await query(sql, params);
+        articleList = await query(sql);
         const totalNumber = await query(sqlToTotal);
         total = totalNumber[0].total;
     } catch (e) {
@@ -185,8 +184,8 @@ router.get('/articles/:article_id', async (req, res) => {
             })
             return
         }
-        const articleSql = `SELECT * FROM article WHERE article_id = ${articleId}`
-        const tagSql = `SELECT * FROM article_tag WHERE article_id = ${articleId}`
+        const articleSql = `SELECT * FROM article WHERE article_id = ${SqlString.escape(articleId)}`
+        const tagSql = `SELECT * FROM article_tag WHERE article_id = ${SqlString.escape(articleId)}`
         const articleInfo = await query(articleSql)
         if (!articleInfo.length) {
             throw new Error('Article not found')
@@ -251,7 +250,7 @@ router.put('/articles/:article_id', async (req, res) => {
 
         // 无 tag 时, 删除 tag 与 article 关联信息
         if (!tag.length) {
-            await query(`DELETE FROM article_tag WHERE article_id = ${articleId}`)
+            await query(`DELETE FROM article_tag WHERE article_id = ${SqlString.escape(articleId)}`)
         }
 
     } catch (e) {
@@ -282,10 +281,10 @@ router.delete('/articles/:article_id', async (req, res) => {
         }
 
         // 删除 article_tag 数据
-        await query(`DELETE FROM article_tag WHERE article_id = ${articleId}`)
+        await query(`DELETE FROM article_tag WHERE article_id = ${SqlString.escape(articleId)}`)
 
         // 删除 article 数据
-        await query(`DELETE FROM article WHERE article_id = ${articleId}`)
+        await query(`DELETE FROM article WHERE article_id = ${SqlString.escape(articleId)}`)
 
         res.status(200).send({
             message: 'Success'
@@ -301,7 +300,7 @@ router.delete('/articles/:article_id', async (req, res) => {
  * 接口: 获取 tag 列表
  */
 router.get('/tags', (req, res) => {
-    const sql = 'SELECT * FROM tag';
+    const sql = SqlString.format('SELECT * FROM tag');
     connection.query(sql, (error, result) => {
         if (error) throw error;
         res.status(200).send({

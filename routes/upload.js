@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { query, connection } = require('../data/config');
+const SqlString = require('sqlstring');
 const fs = require('fs');
 const { promisify } = require('util');
 const unlinkAsync = promisify(fs.unlink);
@@ -33,7 +34,7 @@ router.put('/article-img/:article_id', uploadConfig.single('main_img'), (req, re
     filename = req.file.filename;
 
     // 插入 main_img 文件路径到 article
-    const sql = `UPDATE article SET main_img = '${filename}' WHERE article_id = ${articleId}`
+    const sql = SqlString.format(`UPDATE article SET main_img = '${filename}' WHERE article_id = ${articleId}`)
     connection.query(sql, (error, result) => {
         if (error) throw error;
         res.status(200).send({
