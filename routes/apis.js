@@ -299,14 +299,32 @@ router.delete('/articles/:article_id', async (req, res) => {
 /**
  * 接口: 获取 tag 列表
  */
-router.get('/tags', (req, res) => {
-    const sql = SqlString.format('SELECT * FROM tag');
-    connection.query(sql, (error, result) => {
-        if (error) throw error;
+router.get('/tags/page', async (req, res) => {
+    const pageNumber = req.query.page_number || 1;
+    const pageSize = req.query.page_size || 3;
+    const params = [(parseInt(pageNumber) - 1) * parseInt(pageSize), parseInt(pageSize)]
+    const sql = SqlString.format('SELECT * FROM tag LIMIT ?, ?', params);
+    const sqlTotal = SqlString.format('SELECT COUNT(*) AS total FROM tag');
+    let tagList = [];
+    let total = 0;
+    try {
+        tagList = await query(sql);
+        const totalNumber = await query(sqlTotal)
+        total = totalNumber[0].total
+
         res.status(200).send({
-            result
+            result: tagList,
+            page: {
+                pageNumber: parseInt(pageNumber),
+                pageSize: parseInt(pageSize),
+                total
+            }
         })
-    })
+    } catch (e) {
+        res.status(500).send({
+            message: 'Get tags error'
+        })
+    }
 })
 
 
